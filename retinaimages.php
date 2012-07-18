@@ -1,12 +1,16 @@
 <?php
 
 	/* Version: 1.3 - now with more cache */
-	
+
 	define('DEBUG',              false);    // Write debugging information to a log file
-	define('SEND_ETAG',          true);     // You will want to disable this if you load balance multiple servers 
-	define('SEND_EXPIRES',       true);     // 
-	define('SEND_CACHE_CONTROL', true);     // 
+	define('SEND_ETAG',          true);     // You will want to disable this if you load balance multiple servers
+	define('SEND_EXPIRES',       true);     //
+	define('SEND_CACHE_CONTROL', true);     //
 	define('CACHE_TIME',         24*60*60); // default: 1 day
+
+	$param_key = 'hires';
+
+	/***************************************/
 
 	$document_root  = $_SERVER['DOCUMENT_ROOT'];
 	$requested_uri  = parse_url(urldecode($_SERVER['REQUEST_URI']), PHP_URL_PATH);
@@ -31,9 +35,24 @@
 		// Check if DPR is high enough to warrant retina image
 		if (DEBUG) { fwrite($_debug_fh, "devicePixelRatio:  {$_COOKIE['devicePixelRatio']}\n"); }
 		if (isset($_COOKIE['devicePixelRatio']) && intval($_COOKIE['devicePixelRatio']) > 1) {
-			// Check if retina image exists
-			$retina_file = pathinfo($source_file, PATHINFO_DIRNAME).'/'.pathinfo($source_file, PATHINFO_FILENAME).'@2x.'.pathinfo($source_file, PATHINFO_EXTENSION);
+
+			// Check for high-res param key in query string and use its value if there:
+			foreach ($requested_params as $requested_param) {
+				$param = explode('=', $requested_param);
+				if ( $param[0] === $param_key) {
+					$retina_file = $param[1];
+					break;
+				}
+			}
+
+			// If no high-res param value in query string, check for "...@2x" file
+			if (!$retina_file) {
+				$retina_file = pathinfo($source_file, PATHINFO_DIRNAME).'/'.pathinfo($source_file, PATHINFO_FILENAME).'@2x.'.pathinfo($source_file, PATHINFO_EXTENSION);
+			}
+
 			if (DEBUG) { fwrite($_debug_fh, "retina_file:       {$retina_file}\n"); }
+
+			// Check if retina image exists
 			if (file_exists($retina_file)) {
 				$source_file = $retina_file;
 			}
@@ -42,7 +61,7 @@
 
 		// Send cache headers
 		if (SEND_CACHE_CONTROL) {
-			header('Cache-Control: private, max-age='.CACHE_TIME, true);  
+			header('Cache-Control: private, max-age='.CACHE_TIME, true);
 		}
 		if (SEND_EXPIRES) {
 			date_default_timezone_set('GMT');

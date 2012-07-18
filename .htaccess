@@ -9,6 +9,10 @@
 	# i.e. http://example.com/index.html
 	#
 	RewriteBase /
+	# To exclude files in a directory
+	# e.g. exclude CSS bg images and handle with @media in stylesheets instead:
+	# RewriteCond !assets/styles/images/
+
 	RewriteRule \.(?:jpe?g|gif|png|bmp)$ /retinaimages.php [L]
 
 	# Option 2
